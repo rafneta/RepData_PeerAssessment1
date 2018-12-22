@@ -8,14 +8,100 @@ output:
 
 ## Loading and preprocessing the data
 
+#### 1. Load the data (i.e. read.csv() )
+
+```{r, echo = TRUE}
+data <- read.csv("activity.csv", header = TRUE)
+str(data)
+data$date <- as.character(data$date)
+str(data)
+```
+
 
 
 ## What is mean total number of steps taken per day?
 
+#### 1. Calculate the total number of steps taken per day
 
+```{r, echo = TRUE}
+days <- unique(data$date)
+Totalsteps <- c()
+  for(day in days){
+    speday <-subset(data, data$date == day)
+    spedayInd <- is.na(speday$steps)
+    speday<-speday[!spedayInd,] 
+    Totalsteps<- c(Totalsteps,sum(speday$steps))
+  }
+print(data.frame(Date=days,
+                 TotalSteps=Totalsteps))
+```
+
+
+#### 2. Make a histogram of the total number of steps taken each day
+
+```{r, echo = TRUE}
+Tdays <- c()
+count<-1
+  for(i in Totalsteps){
+    Tdays<- c(Tdays,rep(count,i))
+    count <- count +1
+  }
+
+breakpoints <- seq(from = 0.5, to= 61.5, by=1)
+hist(Tdays,
+     breaks = breakpoints,
+     main = "Number of steps per day",
+     xlab = "61 days (center of each bar)",
+     col = "blue")
+```
+
+
+#### 3. Calculate and report the mean and median total number of steps taken per day
+```{r, echo = TRUE}
+stepsMean <- c()
+stepsMedian <- c()
+  for(day in days){
+    speday <-subset(data, data$date == day)
+    spedayInd <- is.na(speday$steps)
+    speday<-speday[!spedayInd,] 
+    stepsMean<- c(stepsMean, mean(speday$steps))
+    stepsMedian<- c(stepsMedian, median(speday$steps))
+  }
+
+results <- data.frame(date = days, 
+                      StepsMean=stepsMean,
+                      StepsMedian =stepsMedian)
+print(results)
+
+```
 
 ## What is the average daily activity pattern?
 
+#### 1. Make a time series plot (i.e. type="l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r, echo = TRUE}
+intervals <- unique(data$interval)
+stepsMeanInterval <- c()
+  for(inter in intervals){
+    speinter <- subset(data, data$interval == inter)
+    speinterInd <- is.na(speinter$steps)
+    speinter<-speinter[!speinterInd,] 
+    stepsMeanInterval<- c(stepsMeanInterval,mean(speinter$steps))
+  }
+plot(intervals,stepsMeanInterval, type = "l")
+title("Average steps across all days")
+```
+
+#### 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r computetime, echo = TRUE}
+results <- data.frame(Mean= stepsMeanInterval,
+                      interval= intervals)
+maxi <- results[order(-results$Mean),]
+head(maxi)
+```
+
+The maximum number of steps (aprox 206 steps) is containig in `835` 5-minute interval.
 
 
 ## Imputing missing values
