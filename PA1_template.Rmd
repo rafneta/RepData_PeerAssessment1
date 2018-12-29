@@ -67,6 +67,8 @@ stepsMedian <- c()
     stepsMean<- c(stepsMean, mean(speday$steps))
     stepsMedian<- c(stepsMedian, median(speday$steps))
   }
+  stepsMean[is.nan(stepsMean)]=0
+  stepsMedian[is.na(stepsMedian)]=0
 
 results <- data.frame(date = days, 
                       StepsMean=stepsMean,
@@ -95,9 +97,9 @@ title("Average steps across all days")
 #### 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 ```{r computetime, echo = TRUE}
-results <- data.frame(Mean= stepsMeanInterval,
+results2 <- data.frame(Mean= stepsMeanInterval,
                       interval= intervals)
-maxi <- results[order(-results$Mean),]
+maxi <- results2[order(-results2$Mean),]
 head(maxi)
 ```
 
@@ -106,6 +108,101 @@ The maximum number of steps (aprox 206 steps) is containig in `835` 5-minute int
 
 ## Imputing missing values
 
+#### 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with \color{red}{\verb|NA|}NAs)
 
+```{r, echo = TRUE}
+index.NA <- is.na(data$steps)
+total.NA <- sum(index.NA)
+total.NA
+```
+
+The number of missins values is `2304`
+
+#### 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+```{r, echo = TRUE}
+intervals <- unique(data$interval)
+new.steps <-data$steps
+for(inter in intervals){
+    speinter <- subset(data, data$interval == inter)
+    speinterInd <- is.na(speinter$steps)
+    speinter<-speinter[!speinterInd,]
+    if(!is.nan(mean(speinter$steps)))
+      new.steps[(data$interval == inter) & is.na(data$steps)]=mean(speinter$steps)
+}
+str(new.steps)
+```
+Following the hint i use the mean value for replace `NA` step value. 
+
+#### 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r, echo = TRUE}
+new.data <-data.frame(steps = new.steps, 
+                      date = data$date,
+                       interval = data$interval)
+str(new.data)
+```
+
+#### 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r, echo = TRUE}
+days <- unique(new.data$date)
+new.Totalsteps <- c()
+  for(day in days){
+    new.speday <-subset(new.data, new.data$date == day)
+    new.spedayInd <- is.na(new.speday$steps)
+    new.speday<-new.speday[!new.spedayInd,] 
+    new.Totalsteps<- c(new.Totalsteps,sum(new.speday$steps))
+  }
+print(data.frame(Date=days,
+                 TotalSteps=new.Totalsteps))
+```
+
+```{r, echo = TRUE}
+new.Tdays <- c()
+count<-1
+  for(i in new.Totalsteps){
+    new.Tdays<- c(new.Tdays,rep(count,i))
+    count <- count +1
+  }
+
+breakpoints <- seq(from = 0.5, to= 61.5, by=1)
+hist(new.Tdays,
+     breaks = breakpoints,
+     main = "Number of steps per day",
+     xlab = "61 days (center of each bar)",
+     col = "blue")
+```
+
+```{r, echo = TRUE}
+new.stepsMean <- c()
+new.stepsMedian <- c()
+  for(day in days){
+    new.speday <-subset(new.data, new.data$date == day)
+    new.spedayInd <- is.na(new.speday$steps)
+    new.speday<-new.speday[!new.spedayInd,] 
+    new.stepsMean<- c(new.stepsMean, mean(new.speday$steps))
+    new.stepsMedian<- c(new.stepsMedian, median(new.speday$steps))
+  }
+
+new.results <- data.frame(date = days, 
+                      StepsMean=new.stepsMean,
+                      StepsMedian =new.stepsMedian)
+print(new.results)
+```
+```{r, echo = TRUE}
+coincidences <- results$StepsMean==new.results$StepsMean
+print(sum(coincidences))
+plot(results$StepsMean, new.results$StepsMean)
+differences <- results$StepsMean-new.results$StepsMean
+print(differences)
+data[data$date==data$date[1],1]
+data[data$date==data$date[8],1]
+```
+
+There are `53` coincidences, in this case only the `8` values differ from the original, in this `8` days the value for mean is the same `37.38` because the complete day steps are NA. 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+#### 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
